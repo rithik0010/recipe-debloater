@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 let createClientResult = 'not_imported_yet';
-try {
-  const supabase = require('@supabase/supabase-js');
-  createClientResult = 'imported_successfully';
-} catch (err: any) {
-  createClientResult = 'import_error: ' + err.message;
-}
+let createClientResult = 'deferred';
 
 export async function GET(req: NextRequest) {
   const results: Record<string, unknown> = {
