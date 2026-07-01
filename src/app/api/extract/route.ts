@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Vercel: allow up to 60 seconds for video/website extraction
-export const maxDuration = 60;
 import { detectUrlType, normalizeUrl } from '@/lib/utils/urlDetector';
 import { scrapeWebsite } from '@/lib/services/scraper';
 import { extractVideoRecipe } from '@/lib/services/videoExtractor';
@@ -124,3 +122,5 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+export const maxDuration = 60;
