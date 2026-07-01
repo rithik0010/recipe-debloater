@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
       {
         source: '/api/:path*',
         headers: [
-          { key: 'Access-Control-Allow-Origin', value: process.env.ALLOWED_ORIGIN ?? '*' },
+          { key: 'Access-Control-Allow-Origin', value: (process.env.ALLOWED_ORIGIN || '*').trim() },
           { key: 'Access-Control-Allow-Methods', value: 'GET, POST, DELETE, OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
         ],
