@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import { Recipe } from '@/lib/types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -7,6 +6,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 // Server-side admin client (bypasses RLS)
 export function getAdminSupabase() {
+  const { createClient } = require('@supabase/supabase-js');
   return createClient(supabaseUrl, supabaseServiceKey, {
     auth: { persistSession: false },
   });
@@ -14,6 +14,7 @@ export function getAdminSupabase() {
 
 // Public client for browser/anon usage
 export function getSupabase() {
+  const { createClient } = require('@supabase/supabase-js');
   return createClient(supabaseUrl, supabaseAnonKey);
 }
 

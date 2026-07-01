@@ -2,13 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Vercel: allow up to 60 seconds for video/website extraction
 export const maxDuration = 60;
-import { createClient } from '@supabase/supabase-js';
 import { detectUrlType, normalizeUrl } from '@/lib/utils/urlDetector';
 import { scrapeWebsite } from '@/lib/services/scraper';
 import { extractVideoRecipe } from '@/lib/services/videoExtractor';
 import { parseRecipeFromText } from '@/lib/services/aiParser';
 import { getCached, setCached } from '@/lib/services/cache';
-import { saveRecipe, getExtractionCount, logExtraction, getUserProfile } from '@/lib/services/db';
+import { saveRecipe, getExtractionCount, logExtraction, getUserProfile, getSupabase } from '@/lib/services/db';
 import { Recipe } from '@/lib/types';
 
 const FREE_DAILY_LIMIT = 10;
@@ -42,10 +41,7 @@ export async function POST(req: NextRequest) {
     const authHeader = req.headers.get('authorization');
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7);
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      const supabase = getSupabase();
       const { data: { user } } = await supabase.auth.getUser(token);
       if (user) {
         userId = user.id;
