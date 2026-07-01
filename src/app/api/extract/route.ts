@@ -15,6 +15,11 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as { url?: string };
     const { url } = body;
+    
+    // DEBUG HANG TEST
+    if (url === 'test-hang') {
+      return NextResponse.json({ success: true, message: 'I DID NOT HANG' }, { status: 200 });
+    }
 
     if (!url || typeof url !== 'string') {
       return NextResponse.json({ success: false, error: 'URL is required' }, { status: 400 });
