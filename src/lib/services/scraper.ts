@@ -13,7 +13,9 @@ export async function scrapeWebsite(url: string): Promise<string> {
     'X-Remove-Selector': 'nav, footer, .ad, .advertisement, .sidebar, #comments, .social-share',
   };
 
-  if (JINA_API_KEY) {
+  // Only attach key if it looks real (not a placeholder like "xxx")
+  const hasRealKey = JINA_API_KEY && JINA_API_KEY.length > 10 && JINA_API_KEY !== 'xxx';
+  if (hasRealKey) {
     headers['Authorization'] = `Bearer ${JINA_API_KEY}`;
   }
 

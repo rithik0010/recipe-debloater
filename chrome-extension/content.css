@@ -1,0 +1,4 @@
+/* Minimal styles for injected content button — scoped to avoid conflicts */
+#rdb-btn {
+  font-family: system-ui, -apple-system, sans-serif !important;
+}

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipe De-Bloater</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <span class="logo-icon">🍳</span>
+        <div>
+          <div class="logo-title">Recipe <span class="gradient-text">De-Bloater</span></div>
+          <div class="logo-sub">Clean recipes instantly</div>
+        </div>
+      </div>
+      <button id="open-dashboard" class="btn-icon" title="Open Dashboard">⊞</button>
+    </div>
+
+    <!-- URL Display -->
+    <div class="url-bar">
+      <span class="url-icon" id="url-icon">🔗</span>
+      <span class="url-text" id="current-url">Loading page URL...</span>
+    </div>
+
+    <!-- Action -->
+    <div class="action-area">
+      <button id="extract-btn" class="btn-primary" disabled>
+        <span id="btn-icon">✨</span>
+        <span id="btn-text">De-Bloat Recipe</span>
+      </button>
+    </div>
+
+    <!-- Status -->
+    <div id="status-area" class="status-area hidden">
+      <div id="status-content"></div>
+    </div>
+
+    <!-- Recipe Preview (minimal) -->
+    <div id="recipe-preview" class="recipe-preview hidden">
+      <div class="recipe-title-row">
+        <h3 id="recipe-title" class="recipe-title"></h3>
+        <a id="open-full" href="#" class="open-full-btn" target="_blank">Open Full ↗</a>
+      </div>
+      <div id="recipe-meta" class="recipe-meta"></div>
+      <div class="recipe-section">
+        <div class="section-label">🧂 Ingredients</div>
+        <ul id="ingredients-list" class="ingredients-list"></ul>
+      </div>
+      <div class="recipe-section">
+        <div class="section-label">📋 Steps</div>
+        <ol id="steps-list" class="steps-list"></ol>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span id="extraction-count">10 extractions/day free</span>
+      <a href="https://recipe-debloater.vercel.app" target="_blank" class="upgrade-link">Upgrade to Pro →</a>
+    </div>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

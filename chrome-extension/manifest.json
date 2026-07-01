@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "Recipe De-Bloater",
+  "version": "1.0.0",
+  "description": "Instantly extract clean recipes from any cooking website or YouTube video. No ads, no stories — just the recipe.",
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "De-Bloat Recipe",
+    "default_icon": {
+      "16":  "icons/icon16.png",
+      "48":  "icons/icon48.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.allrecipes.com/*",
+        "*://*.food52.com/*",
+        "*://*.bonappetit.com/*",
+        "*://*.nytimes.com/recipes/*",
+        "*://*.seriouseats.com/*",
+        "*://*.epicurious.com/*",
+        "*://*.tasty.co/*",
+        "*://*.delish.com/*",
+        "*://*.thespruceeats.com/*",
+        "*://*.food.com/*",
+        "*://*.bbc.co.uk/food/*",
+        "*://*.bbcgoodfood.com/*",
+        "*://www.youtube.com/watch*",
+        "*://youtu.be/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://recipe-debloater.vercel.app/*",
+    "http://localhost:3000/*"
+  ]
+}

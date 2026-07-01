@@ -21,6 +21,19 @@ export function getSupabase() {
 
 export async function saveRecipe(recipe: Recipe, userId: string): Promise<Recipe | null> {
   const db = getAdminSupabase();
+
+  // Check if this user already has this recipe saved (avoid duplicates)
+  const { data: existing } = await db
+    .from('recipes')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('source_url', recipe.source_url)
+    .maybeSingle();
+
+  if (existing) {
+    return existing as Recipe;
+  }
+
   const { data, error } = await db
     .from('recipes')
     .insert({

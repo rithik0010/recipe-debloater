@@ -40,7 +40,8 @@ export async function callFreeLLM(systemPrompt: string, userPrompt: string): Pro
 
   for (const provider of PROVIDERS) {
     const apiKey = provider.key();
-    if (!apiKey) {
+    const isPlaceholder = !apiKey || apiKey.length < 10 || apiKey === 'xxx';
+    if (isPlaceholder) {
       errors.push(`${provider.name}: no API key configured`);
       continue;
     }

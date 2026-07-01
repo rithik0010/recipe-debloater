@@ -8,8 +8,6 @@ const GROQ_AUDIO_URL = 'https://api.groq.com/openai/v1/audio/transcriptions';
 // ─── Main entry point ────────────────────────────────────────────────────────
 
 export async function extractVideoRecipe(url: string): Promise<Recipe> {
-  const videoId = extractYouTubeId(url) || url;
-
   // Step 1: Try free YouTube captions first (instant, no quota used)
   let transcript = '';
   let title = '';
@@ -23,15 +21,17 @@ export async function extractVideoRecipe(url: string): Promise<Recipe> {
     console.log('❌ No captions available, falling back to audio transcription:', err);
   }
 
-  // Step 2: If no captions, use Groq Whisper via YouTube audio stream
+  // Step 2: If no captions, use Groq Whisper
   if (!transcript) {
     try {
       const audioResult = await transcribeVideoAudio(url);
       transcript = audioResult.transcript;
-      title = audioResult.title || videoId;
+      title = audioResult.title || '';
       console.log('✅ Used Groq Whisper transcription');
     } catch (err) {
-      throw new Error(`Failed to extract video audio: ${err instanceof Error ? err.message : String(err)}`);
+      throw new Error(
+        `Failed to extract video content: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
 
@@ -46,77 +46,87 @@ export async function extractVideoRecipe(url: string): Promise<Recipe> {
 
 // ─── YouTube Captions (via youtube-transcript) ───────────────────────────────
 
-async function fetchYouTubeCaptions(url: string): Promise<{ transcript: string; title: string }> {
-  // Dynamic import to keep bundle lean
+async function fetchYouTubeCaptions(
+  url: string
+): Promise<{ transcript: string; title: string }> {
   const { YoutubeTranscript } = await import('youtube-transcript');
 
   const videoId = extractYouTubeId(url);
   if (!videoId) throw new Error('Could not extract video ID from URL');
 
   const entries = await YoutubeTranscript.fetchTranscript(videoId);
-  const transcript = entries.map((e: { text: string }) => e.text).join(' ');
+  const transcript = entries
+    .map((e: { text: string }) => e.text.replace(/\[.*?\]/g, '').trim())
+    .filter(Boolean)
+    .join(' ');
 
-  // Get title from oEmbed (no auth needed)
+  // Get title via YouTube oEmbed (no auth required)
   let title = '';
   try {
     const oembedRes = await fetch(
-      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+      `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`,
+      { signal: AbortSignal.timeout(5000) }
     );
     if (oembedRes.ok) {
-      const oembedData = await oembedRes.json() as { title?: string };
-      title = oembedData.title || '';
+      const oembedData = (await oembedRes.json()) as { title?: string };
+      title = oembedData.title ?? '';
     }
   } catch {
-    // title stays empty, that's fine
+    // title stays empty
   }
 
-  return { transcript, title };
+  return { transcript: transcript.slice(0, 15000), title };
 }
 
-// ─── Groq Whisper Transcription ──────────────────────────────────────────────
+// ─── Groq Whisper Transcription via ytdl-core ────────────────────────────────
 
-async function transcribeVideoAudio(url: string): Promise<{ transcript: string; title: string }> {
+async function transcribeVideoAudio(
+  url: string
+): Promise<{ transcript: string; title: string }> {
   if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY not configured');
 
-  // Fetch audio stream from YouTube using yt-dlp's JSON API
-  // On Vercel, we use the yt-dlp-wrap npm package which ships the binary
-  const { default: YTDlpWrap } = await import('yt-dlp-wrap');
-  const ytDlp = new YTDlpWrap();
+  const ytdl = await import('@distube/ytdl-core');
 
-  // Get video info first (no download)
-  const videoInfo = await ytDlp.getVideoInfo(url);
-  const title = videoInfo.title || '';
-
-  // Get best audio-only stream URL (no local download needed — we stream)
-  const audioFormats = (videoInfo.formats || []).filter(
-    (f: { acodec?: string; vcodec?: string; url?: string }) =>
-      f.acodec !== 'none' && (f.vcodec === 'none' || !f.vcodec) && f.url
-  );
-
-  if (!audioFormats.length) {
-    throw new Error('No audio-only stream found for this video');
+  // Validate YouTube URL
+  if (!ytdl.default.validateURL(url)) {
+    throw new Error('Not a valid YouTube URL for audio extraction');
   }
 
-  // Sort by quality and pick best under 25MB (Groq limit)
-  const sorted = audioFormats.sort(
-    (a: { filesize?: number }, b: { filesize?: number }) =>
-      (b.filesize ?? Infinity) - (a.filesize ?? Infinity)
-  );
-  const bestAudio = sorted.find(
-    (f: { filesize?: number }) => !f.filesize || f.filesize < 24 * 1024 * 1024
-  ) || sorted[sorted.length - 1];
+  // Get video info
+  const info = await ytdl.default.getInfo(url);
+  const title = info.videoDetails.title || '';
 
-  if (!bestAudio?.url) throw new Error('Could not get audio stream URL');
+  // Choose best audio-only format under 25MB (Groq limit)
+  const audioFormats = ytdl.default
+    .filterFormats(info.formats, 'audioonly')
+    .sort((a, b) => (Number(b.audioBitrate) || 0) - (Number(a.audioBitrate) || 0));
 
-  // Stream audio directly to Groq Whisper (no disk I/O on Vercel)
-  const audioRes = await fetch(bestAudio.url, { signal: AbortSignal.timeout(60000) });
-  if (!audioRes.ok) throw new Error(`Failed to fetch audio stream: ${audioRes.status}`);
+  if (!audioFormats.length) {
+    throw new Error('No audio stream found for this video');
+  }
 
-  const audioBlob = await audioRes.blob();
+  // Use lowest bitrate (smallest file) to stay under Groq 25MB limit
+  const format = audioFormats[audioFormats.length - 1];
+
+  // Stream audio and collect into buffer (Vercel /tmp or in-memory)
+  const audioStream = ytdl.default(url, { format });
+  const chunks: Buffer[] = [];
+
+  await new Promise<void>((resolve, reject) => {
+    audioStream.on('data', (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+    audioStream.on('end', resolve);
+    audioStream.on('error', reject);
+  });
+
+  const audioBuffer = Buffer.concat(chunks);
+
+  if (audioBuffer.length > 25 * 1024 * 1024) {
+    throw new Error('Audio file too large for Groq Whisper (>25MB). Use shorter videos.');
+  }
 
   // Send to Groq Whisper API
   const formData = new FormData();
-  formData.append('file', audioBlob, 'audio.mp3');
+  formData.append('file', new Blob([audioBuffer], { type: 'audio/mp4' }), 'audio.mp4');
   formData.append('model', 'whisper-large-v3-turbo');
   formData.append('response_format', 'text');
 
@@ -129,7 +139,7 @@ async function transcribeVideoAudio(url: string): Promise<{ transcript: string; 
 
   if (!whisperRes.ok) {
     const errText = await whisperRes.text();
-    throw new Error(`Groq Whisper failed: ${whisperRes.status} — ${errText.slice(0, 200)}`);
+    throw new Error(`Groq Whisper failed: ${whisperRes.status} — ${errText.slice(0, 300)}`);
   }
 
   const transcript = await whisperRes.text();
