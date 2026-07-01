@@ -120,7 +120,7 @@ export async function POST(req: NextRequest) {
     console.error('❌ /api/extract error:', message);
     return NextResponse.json(
       { success: false, error: message },
-      { status: 500 }
+      { status: 400 } // Avoid 500 to prevent Vercel HTML override
     );
   }
 }
