@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-let createClientResult = 'not_imported_yet';
 let createClientResult = 'deferred';
 
 export async function GET(req: NextRequest) {
