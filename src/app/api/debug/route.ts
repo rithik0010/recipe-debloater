@@ -1,46 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+let createClientResult = 'not_imported_yet';
+try {
+  const supabase = require('@supabase/supabase-js');
+  createClientResult = 'imported_successfully';
+} catch (err: any) {
+  createClientResult = 'import_error: ' + err.message;
+}
+
 export async function GET(req: NextRequest) {
-  const results: Record<string, unknown> = {};
+  const results: Record<string, unknown> = {
+    step: 'start',
+    import_status: createClientResult
+  };
 
   try {
-    const keys = [
-      'GROQ_API_KEY',
-      'NEXT_PUBLIC_SUPABASE_URL',
-      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-      'SUPABASE_SERVICE_ROLE_KEY',
-      'UPSTASH_REDIS_REST_URL',
-      'UPSTASH_REDIS_REST_TOKEN',
-      'RAZORPAY_KEY_ID',
-      'RAZORPAY_KEY_SECRET',
-      'JINA_API_KEY',
-      'ALLOWED_ORIGIN'
-    ];
+    results.step = 'env_read';
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 
-    const envInfo: Record<string, unknown> = {};
-
-    for (const key of keys) {
-      const val = process.env[key];
-      if (val === undefined) {
-        envInfo[key] = { status: 'MISSING' };
-      } else {
-        envInfo[key] = {
-          status: 'PRESENT',
-          length: val.length,
-          preview_start: val.slice(0, 4),
-          preview_end: val.slice(-4),
-          hasWhitespace: /\s/.test(val),
-          hasQuotes: val.startsWith('"') || val.endsWith('"') || val.startsWith("'") || val.endsWith("'"),
-          hasCarriageReturn: val.includes('\r') || val.includes('\n'),
-        };
+    results.step = 'create_client_test';
+    if (createClientResult === 'imported_successfully') {
+      const { createClient } = require('@supabase/supabase-js');
+      try {
+        const client = createClient(url, anonKey);
+        results.client_created = true;
+      } catch (err: any) {
+        results.client_created = false;
+        results.client_error = err.message;
       }
     }
-
-    results.env = envInfo;
     results.status = 'success';
-  } catch (e) {
+  } catch (e: any) {
     results.status = 'error';
-    results.error = String(e);
+    results.error = e.message;
   }
 
   return NextResponse.json(results, { status: 200 });
