@@ -29,9 +29,13 @@ export async function extractVideoRecipe(url: string): Promise<Recipe> {
       title = audioResult.title || '';
       console.log('✅ Used Groq Whisper transcription');
     } catch (err) {
-      throw new Error(
-        `Failed to extract video content: ${err instanceof Error ? err.message : String(err)}`
-      );
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('Sign in to confirm')) {
+        throw new Error('YouTube blocked access to this video because it has no captions and requires a login. Please try a video with closed captions.');
+      } else if (msg.includes('Video unavailable')) {
+        throw new Error('This video is unavailable or private.');
+      }
+      throw new Error(`Failed to extract video content: ${msg}`);
     }
   }
 
