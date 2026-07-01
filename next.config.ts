@@ -20,6 +20,14 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        source: '/manifest.json',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+        ],
+      },
+      {
         source: '/api/:path*',
         headers: [
           { key: 'Access-Control-Allow-Origin', value: process.env.ALLOWED_ORIGIN ?? '*' },

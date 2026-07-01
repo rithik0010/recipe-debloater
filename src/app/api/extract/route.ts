@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       const { data: { user } } = await supabase.auth.getUser(token);
       if (user) {
         userId = user.id;
-        const profile = await getUserProfile(userId);
+        const profile = await getUserProfile(user.id);
         userPlan = profile?.plan ?? 'free';
       }
     }
