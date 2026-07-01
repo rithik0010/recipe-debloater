@@ -194,6 +194,13 @@ export default function HomePage() {
         headers,
         body: JSON.stringify({ url }),
       });
+
+      // Guard: if server returns HTML (e.g. Vercel timeout/504), show a friendly message
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('Server error — please try again in a moment.');
+      }
+
       const data: ExtractionResult & { fromCache?: boolean } = await res.json();
       if (!data.success || !data.recipe) throw new Error(data.error ?? 'Extraction failed');
       setResult(data.recipe);
@@ -205,6 +212,7 @@ export default function HomePage() {
       setLoading(false);
     }
   }
+
 
   // ── Upgrade ────────────────────────────────────────────────────────────────
   async function handleUpgrade() {

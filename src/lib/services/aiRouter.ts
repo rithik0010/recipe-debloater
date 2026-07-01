@@ -70,7 +70,7 @@ export async function callFreeLLM(systemPrompt: string, userPrompt: string): Pro
           temperature: 0.1,
           max_tokens: 2500,
         }),
-        signal: AbortSignal.timeout(45000),
+        signal: AbortSignal.timeout(15000),
       });
 
       if (!res.ok) {

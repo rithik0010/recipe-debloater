@@ -19,7 +19,7 @@ export async function scrapeWebsite(url: string): Promise<string> {
     headers['Authorization'] = `Bearer ${JINA_API_KEY}`;
   }
 
-  const res = await fetch(jinaUrl, { headers, signal: AbortSignal.timeout(30000) });
+  const res = await fetch(jinaUrl, { headers, signal: AbortSignal.timeout(10000) });
 
   if (!res.ok) {
     throw new Error(`Jina Reader failed: ${res.status} ${res.statusText}`);
